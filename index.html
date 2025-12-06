@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物療マニュアル 完全攻略マスター</title>
+<style>
+    body { font-family: "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; background-color: #e0f7fa; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); position: relative; }
+    h1 { text-align: center; color: #0097a7; margin-bottom: 25px; font-size: 1.8em; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+    .reset-btn { position: absolute; top: 20px; right: 20px; background: #95a5a6; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em; transition: 0.3s; }
+    .reset-btn:hover { background: #7f8c8d; }
+    .status-bar { background: #e0f2f1; padding: 12px 20px; border-radius: 8px; display: flex; justify-content: space-between; color: #00695c; font-weight: bold; margin-bottom: 25px; }
+    .question-box { background: #f1f8e9; border-left: 6px solid #0097a7; padding: 20px; margin-bottom: 25px; font-size: 1.15em; font-weight: bold; line-height: 1.5; }
+    .option-btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; background: #fff; border: 2px solid #e0e0e0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 1em; color: #444; }
+    .option-btn:hover { background-color: #e0f7fa; border-color: #0097a7; }
+    .option-btn.correct { background-color: #d4edda; border-color: #28a745; color: #155724; }
+    .option-btn.incorrect { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+    .feedback { display: none; margin-top: 20px; padding: 20px; border-radius: 8px; background: #f1f8e9; border: 1px solid #c8e6c9; color: #2e7d32; animation: fadeIn 0.3s; }
+    .feedback.error { background: #fdecea; border: 1px solid #fadbd8; color: #7b241c; }
+    .source-ref { display: block; margin-top: 8px; font-size: 0.85em; color: #666; text-align: right; font-style: italic; }
+    .next-btn { display: block; width: 100%; padding: 18px; background: #0097a7; color: #fff; border: none; border-radius: 8px; font-size: 1.2em; font-weight: bold; cursor: pointer; margin-top: 25px; opacity: 0.6; pointer-events: none; transition: 0.3s; }
+    .next-btn.active { opacity: 1; pointer-events: auto; }
+    .next-btn:hover { background-color: #006064; }
+    #result-screen { display: none; text-align: center; padding: 20px; }
+    .score-circle { width: 150px; height: 150px; background: #0097a7; color: #fff; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 30px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .score-num { font-size: 3.5em; font-weight: bold; line-height: 1; }
+    .score-label { font-size: 0.9em; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="container">
+    <div id="start-screen" style="text-align: center; padding: 40px 0;">
+        <h1 style="border: none;">物療マニュアル<br>完全攻略マスター</h1>
+        <p style="font-size: 1.1em; margin-bottom: 30px;">全60問のプールから<br>毎回ランダムに20問出題されます。</p>
+        <p style="font-size: 0.9em; color: #7f8c8d; margin-bottom: 40px;">合格ライン: 80%以上</p>
+        <button class="next-btn active" onclick="startQuiz()">試験を開始する</button>
+    </div>
+
+    <div id="quiz-screen" style="display: none;">
+        <button class="reset-btn" onclick="resetQuiz()">最初に戻る</button>
+        <h1>物療クイズ</h1>
+        <div class="status-bar">
+            <span id="progress">問 1 / 20</span>
+            <span id="score">正解数: 0</span>
+        </div>
+        <div id="question" class="question-box"></div>
+        <div id="options"></div>
+        <div id="feedback" class="feedback"></div>
+        <button id="next-btn" class="next-btn" onclick="nextQuestion()">次の問題へ</button>
+    </div>
+
+    <div id="result-screen">
+        <h2>試験終了</h2>
+        <div class="score-circle">
+            <span class="score-num" id="final-score">0</span>
+            <span class="score-label">点 / 20点</span>
+        </div>
+        <p id="result-comment" style="font-size: 1.2em; margin: 20px 0;"></p>
+        <button class="next-btn active" onclick="resetQuiz(true)">もう一度挑戦する</button>
+    </div>
+</div>
+
+<script>
+// --- 問題プール Part 1 (1-30) ---
+const poolPart1 = [
+    {q:"治療に用いられる3大スタンダードエネルギーに含まれないものは？",o:["電流","衝撃波","温熱","冷却"],c:3,r:"マニュアルでは「電流」「衝撃波」「温熱」が3大エネルギーとして挙げられています。",s:"治療エネルギー"},
+    {q:"電気療法の主な生体反応として挙げられていないものは？",o:["鎮痛効果","機能改善効果","組織修復効果","腫瘍縮小効果"],c:3,r:"主な効果は鎮痛、機能改善、組織修復の3つです。",s:"電気療法とは"},
+    {q:"疼痛コントロールを主目的とする電気療法は？",o:["TENS・干渉波・ハイボルト","EMS・ロシアンカレント","MCR","超音波"],c:0,r:"TENS、IF（干渉波）、HV（ハイボルト）は鎮痛効果を主な目的とします。",s:"電気療法とは"},
+    {q:"組織修復を主目的とする電気療法は？",o:["TENS","ハイボルト","マイクロカレント(MCR)","EMS"],c:2,r:"MCRやDCは骨・軟部組織の修復を促進します。",s:"電気療法とは"},
+    {q:"「周波数」とは何を指すか？",o:["1秒間に繰り返される波の振動回数","電気の流れる速さ","電圧の高さ","治療時間の長さ"],c:0,r:"1秒間の振動回数で、単位はヘルツ(Hz)です。",s:"周波数とは"},
+    {q:"周波数の単位は？",o:["Hz (ヘルツ)","A (アンペア)","V (ボルト)","W (ワット)"],c:0,r:"周波数はヘルツ(Hz)で表されます。",s:"周波数とは"},
+    {q:"「パルス幅」とは何を指すか？",o:["電気刺激が出力されている時間の長さ","電気の強さ","周波数の高さ","治療の間隔"],c:0,r:"電気刺激（パルス）が出力されている時間の長さのことです。",s:"パルス幅とは"},
+    {q:"パルス幅の単位は？",o:["Hz","V","µs (マイクロ秒)","kg"],c:2,r:"マイクロ秒(µs)またはミリ秒(ms)で表されます。",s:"パルス幅とは"},
+    {q:"短いパルス幅（50〜200µs）の主な効果は？",o:["疼痛緩和（ゲートコントロール）","筋収縮","深部刺激","温熱効果"],c:0,r:"短いパルス幅は疼痛緩和に適しています。",s:"パルス幅とは"},
+    {q:"中程度のパルス幅（200〜400µs）の主な効果は？",o:["疼痛緩和","筋収縮（EMS・リハビリ）","深部刺激","組織修復"],c:1,r:"中程度のパルス幅は筋収縮の誘発に適しています。",s:"パルス幅とは"},
+    {q:"低周波（1〜1000Hz）の特徴は？",o:["皮膚抵抗が高いが神経を刺激しやすい","皮膚抵抗が低い","温熱効果がある","深部まで届きやすい"],c:0,r:"低周波は皮膚抵抗が高いですが、神経刺激作用が強いです。",s:"電気療法の種類"},
+    {q:"高周波（10kHz以上）の主な効果は？",o:["筋収縮","疼痛緩和のみ","温熱効果","神経刺激"],c:2,r:"皮膚抵抗がほぼなくなり、深部での温熱効果が期待できます。",s:"電気療法の種類"},
+    {q:"ゲートコントロール理論において、刺激することで痛みを抑制するのはどの神経線維か？",o:["Aβ線維","Aδ線維","C線維","運動神経"],c:0,r:"太いAβ線維（触圧覚）を刺激することで、痛みの伝達をブロックします。",s:"ゲートコントロール理論"},
+    {q:"ゲートコントロール理論で抑制される「痛みの信号」を伝える神経線維は？",o:["Aβ線維","C線維","運動神経","感覚神経"],c:1,r:"Aβ線維への刺激が、C線維（痛覚）の伝達を抑制します。",s:"ゲートコントロール理論"},
+    {q:"筋阻血性疼痛の原因となる物質は？",o:["ブラジキニン・ヒスタミン等","エンドルフィン","ドーパミン","アドレナリン"],c:0,r:"虚血により発痛物質（ブラジキニンなど）が蓄積し、C線維を刺激します。",s:"筋阻血性疼痛"},
+    {q:"鋭利な痛みを伝える神経線維は？",o:["Aδ線維","C線維","Aβ線維","B線維"],c:0,r:"Aδ線維は有髄で、鋭い「一次痛（Fast pain）」を伝えます。",s:"侵害受容器の特徴"},
+    {q:"鈍い痛みを伝える神経線維は？",o:["Aδ線維","C線維","Aβ線維","B線維"],c:1,r:"C線維は無髄で、鈍い「二次痛（Slow pain）」を伝えます。",s:"侵害受容器の特徴"},
+    {q:"周波数1〜10Hzで期待できる効果は？",o:["エンドルフィン分泌","ゲートコントロール","筋力強化","即時鎮痛"],c:0,r:"低頻度（1-10Hz）はエンドルフィン（内因性鎮痛物質）の分泌を促進します。",s:"周波数ごとの効果"},
+    {q:"周波数100〜200Hzで期待できる効果は？",o:["エンドルフィン分泌","ゲートコントロール作用（即時的疼痛緩和）","筋肥大","組織修復"],c:1,r:"高頻度（100Hz以上）はゲートコントロールによる即時的な鎮痛に有効です。",s:"周波数ごとの効果"},
+    {q:"ハイボルト療法で「一次痛（急性の強い痛み）」に対する周波数設定は？",o:["100〜200Hz","1〜10Hz","50Hz","1000Hz"],c:0,r:"ゲートコントロールを狙い、高めの周波数（100-200Hz）を使用します。",s:"ハイボルト療法"},
+    {q:"ハイボルト療法で「二次痛（鈍い痛み）」に対する周波数設定は？",o:["100〜200Hz","1〜15Hz（低頻度）","1000Hz","500Hz"],c:1,r:"エンドルフィン分泌や循環改善を狙い、低頻度（1-15Hz等）を使用します。",s:"ハイボルト療法"},
+    {q:"ハイボルト療法で急性痛（一次痛）に対して交感神経はどう反応させるか？",o:["興奮させる（血管収縮）","抑制させる（血管拡張）","変化させない","麻痺させる"],c:0,r:"急性期は腫脹抑制のため、交感神経を興奮させ血管収縮を促します。",s:"ハイボルト療法"},
+    {q:"ハイボルト療法で慢性痛（二次痛）に対して交感神経はどう反応させるか？",o:["興奮させる","抑制させる（血管拡張）","変化させない","遮断する"],c:1,r:"慢性期は血流改善のため、交感神経を抑制し血管拡張を促します。",s:"ハイボルト療法"},
+    {q:"ハイボルト療法の「急性痛」に対するパルス幅設定は？",o:["10〜20µsec（狭い）","50〜100µsec（広い）","1ms","500µsec"],c:0,r:"Aβ線維を選択的に刺激するため、狭いパルス幅（10-20µs）を用います。",s:"ハイボルト療法"},
+    {q:"マイクロカレント（MCR）の主な効果として正しいのは？",o:["ATP産生促進・組織修復","筋力増強","強い鎮痛","温熱効果"],c:0,r:"微弱電流によりATP産生を促し、細胞レベルでの修復を促進します。",s:"マイクロカレント"},
+    {q:"マイクロカレントが炎症に対して持つ効果は？",o:["炎症性サイトカインの放出抑制","炎症の促進","変化なし","発熱"],c:0,r:"細胞膜電位を正常化し、炎症を抑制する効果があります。",s:"マイクロカレント"},
+    {q:"EMSの特徴として正しいのは？",o:["電気刺激で神経を介さず筋収縮を起こす","熱で筋肉をほぐす","超音波で振動させる","磁気で刺激する"],c:0,r:"電気刺激により強制的に筋収縮を起こし、筋力を強化します。",s:"EMSの特徴"},
+    {q:"電気療法における「スウィープ波形」の目的は？",o:["神経の順応（慣れ）を防ぐ","電圧を上げる","時間を短縮する","温める"],c:0,r:"周波数を変動させることで、体が刺激に慣れてしまうのを防ぎます。",s:"ハイボルト療法"},
+    {q:"Aδ線維の伝達物質は？",o:["グルタミン酸","CGRP","サブスタンスP","アセチルコリン"],c:0,r:"Aδ線維の主な伝達物質はグルタミン酸です。",s:"侵害受容器の特徴"},
+    {q:"C線維の受容器の特徴は？",o:["高閾値機械的受容器","ポリモーダル受容器","触覚受容器","冷覚受容器"],c:1,r:"C線維は様々な刺激（機械・熱・化学）に反応するポリモーダル受容器を持ちます。",s:"侵害受容器の特徴"}
+];
+// --- 問題プール Part 2 (31-60) ---
+const poolPart2 = [
+    {q:"EMSで鍛えられる筋線維の特徴は？（随意運動との違い）",o:["速筋線維から優先的に動員される","遅筋線維から動員される","随意運動と同じ","中間筋のみ"],c:0,r:"電気刺激は、通常の運動では鍛えにくい「速筋線維」を優先的に動員する特徴があります。",s:"EMSの特徴"},
+    {q:"マイクロカレント（MCR）の電流レベルはどのくらいか？",o:["μA（マイクロアンペア）","mA（ミリアンペア）","A（アンペア）","V（ボルト）"],c:0,r:"知覚できないほどの微弱電流（μA）を使用します。",s:"マイクロカレント"},
+    {q:"ATP（アデノシン三リン酸）の産生を促進する電気療法は？",o:["マイクロカレント","ハイボルト","EMS","TENS"],c:0,r:"マイクロカレントはミトコンドリア内のATP産生を大幅に増加させ、修復を早めます。",s:"マイクロカレント"},
+    {q:"「スウィープ波形」を使用する主な理由は？",o:["神経の順応（慣れ）を防ぐため","痛みを強くするため","熱を発生させるため","電気代を節約するため"],c:0,r:"一定の刺激だと体が慣れて効果が薄れるため、周波数を変動させます。",s:"ハイボルト療法"},
+    {q:"ハイボルト療法で、腫れ（浮腫）を引かせたい場合のターゲット神経は？",o:["交感神経","副交感神経","運動神経","感覚神経"],c:0,r:"交感神経を刺激して血管を収縮させ、腫れの拡大を防ぐ（ポンプ作用を促す）アプローチがあります。",s:"ハイボルト療法"},
+    {q:"ハイボルト療法で、慢性的な血行不良を改善したい場合のターゲット神経への作用は？",o:["交感神経の抑制（血管拡張）","交感神経の興奮","運動神経の遮断","感覚神経の興奮"],c:0,r:"交感神経の緊張を解くことで血管を拡張させ、血流を改善します。",s:"ハイボルト療法"},
+    {q:"「筋ポンプ作用」を促進するために適した周波数は？",o:["低い周波数（数Hz〜20Hz程度）","高い周波数（100Hz以上）","超高周波","0Hz"],c:0,r:"筋肉をドクンドクンと大きく動かす低頻度の刺激がポンプ作用を促します。",s:"低周波治療器"},
+    {q:"「廃用性萎縮」の予防に効果的な電気療法は？",o:["EMS","TENS","マイクロカレント","超音波"],c:0,r:"自力で動かせない筋肉を電気で収縮させ、萎縮を防ぐのにEMSが有効です。",s:"低周波治療器"},
+    {q:"「1/f ゆらぎ」のリズムを取り入れた電気刺激の目的は？",o:["リラックス効果と順応防止","筋力強化","脂肪燃焼","殺菌"],c:0,r:"自然界のリズムに近い刺激で、不快感を減らしリラックス効果を高めます。",s:"一般知識"},
+    {q:"干渉波治療器（IF）の特徴は？",o:["異なる周波数の電流を体内で交差させ、深部で干渉低周波を発生させる","皮膚抵抗が高い","浅層のみ刺激する","直流電流を使う"],c:0,r:"皮膚抵抗が低い中周波を使い、体内で干渉させることで深部まで刺激を届けます。",s:"電気療法の種類"},
+    {q:"「疼痛緩和」を目的としたパルス幅の設定は？",o:["短い（50〜200µs）","長い（500µs以上）","中くらい","極めて長い"],c:0,r:"感覚神経（Aβ）を選択的に刺激するため、短いパルス幅が適しています。",s:"パルス幅とは"},
+    {q:"「筋収縮」を目的としたパルス幅の設定は？",o:["中程度〜長い（200µs以上）","極めて短い","ゼロ","変動させる"],c:0,r:"運動神経を脱分極させるには、ある程度のパルス幅（持続時間）が必要です。",s:"パルス幅とは"},
+    {q:"高電圧電気刺激療法（ハイボルト）の最大の特徴は？",o:["深部到達度が高く、即効性がある","皮膚が焼ける","痛みが強い","時間がかかる"],c:0,r:"高電圧で皮膚抵抗を突破し、深部組織まで刺激を到達させることができます。",s:"電気療法の種類"},
+    {q:"侵害受容器のAδ線維が伝える痛みは？",o:["鋭い痛み（Fast pain）","鈍い痛み（Slow pain）","痒み","痺れ"],c:0,r:"「チクッ」とするような最初の鋭い痛みを伝えます。",s:"侵害受容器の特徴"},
+    {q:"侵害受容器のC線維が伝える痛みは？",o:["鈍い痛み（Slow pain）","鋭い痛み","冷たさ","触覚"],c:0,r:"「ズキズキ」するような、遅れてくる鈍い痛みを伝えます。",s:"侵害受容器の特徴"},
+    {q:"痛みの伝達物質として挙げられるのは？",o:["グルタミン酸・サブスタンスP","セロトニン","ドーパミン","アセチルコリン"],c:0,r:"末梢から脊髄への痛み伝達にはグルタミン酸やサブスタンスPなどが関与します。",s:"侵害受容器の特徴"},
+    {q:"物理療法の3大エネルギーのうち「衝撃波」の主な適応組織は？",o:["腱・骨・痙性","神経のみ","皮膚のみ","血管のみ"],c:0,r:"石灰沈着性腱板炎や難治性疼痛（腱付着部炎）、骨癒合不全などに用いられます。",s:"治療エネルギー"},
+    {q:"超音波治療器の温熱効果はどの分類に入るか？",o:["深部加熱","伝導加温","輻射熱","対流熱"],c:0,r:"超音波振動による摩擦熱で、体の奥（深部）を温めます。",s:"治療エネルギー"},
+    {q:"ホットパックの温熱区分は？",o:["伝導加温","深部加熱","変換熱","輻射熱"],c:0,r:"熱源を直接体に当てる「伝導」による加温です。",s:"治療エネルギー"},
+    {q:"「ゲートコントロール理論」を提唱した人物は？",o:["Melzack と Wall","Newton","Einstein","Hippocrates"],c:0,r:"1965年にメルザックとウォールによって提唱されました。",s:"ゲートコントロール理論"},
+    {q:"電気刺激による鎮痛効果で、脳内麻薬物質と呼ばれるものは？",o:["エンドルフィン","アドレナリン","インスリン","ヒスタミン"],c:0,r:"低周波刺激などで分泌が促進され、鎮痛作用をもたらします。",s:"低周波治療器"},
+    {q:"RUSS（ロシアンカレント）の主な目的は？",o:["筋力強化（筋肉の再教育）","リラクゼーション","創傷治癒","骨癒合"],c:0,r:"2500Hzの中周波を用いた、強力な筋収縮を促すプログラムです。",s:"電気療法とは"},
+    {q:"DC（ダイレクトカレント）とはどんな電流か？",o:["直流電流","交流電流","干渉波","高周波"],c:0,r:"一方向に流れ続ける電流で、イオン導入や組織修復などに使われます。",s:"電気療法とは"},
+    {q:"30〜80Hzの周波数で期待できる効果は？",o:["筋弛緩・血流促進","即時鎮痛","筋力増強","神経遮断"],c:0,r:"筋肉をほぐし、血行を良くするのに適した周波数帯です。",s:"周波数ごとの効果"},
+    {q:"ハイボルト療法で、反応閾値「以下」の弱め刺激で行う目的は？",o:["組織修復・微細な循環改善","筋力強化","即時鎮痛","麻痺の改善"],c:0,r:"強い収縮を伴わない刺激で、細胞レベルの活性化や微小循環の改善を狙います。",s:"ハイボルト療法"},
+    {q:"物理療法禁忌となる患者の状態は？",o:["ペースメーカー装着者","高血圧（管理下）","糖尿病（管理下）","高齢者"],c:0,r:"心臓ペースメーカーなどの体内植込型医用電子機器を使用している方は禁忌です。",s:"一般知識"},
+    {q:"急性の炎症（腫れ・熱感）がある患部への温熱療法は？",o:["禁忌（行ってはいけない）","推奨される","どちらでもよい","短時間なら良い"],c:0,r:"急性炎症期に温めると炎症を助長するため禁忌です。冷却（アイシング）やMCRなどが適応です。",s:"一般知識"},
+    {q:"電気療法で、電極パッドの密着が悪いとどうなるか？",o:["火傷のリスクが高まる","効果が上がる","電気が強くなる","何も起きない"],c:0,r:"接触面積が小さくなり電流密度が高まるため、刺すような痛みや火傷の原因になります。",s:"一般知識"},
+    {q:"感覚神経（Aβ線維）を刺激して痛みを抑える理論は？",o:["ゲートコントロール理論","のれん分け理論","相対性理論","量子論"],c:0,r:"太い神経線維からの入力が、痛みのゲートを閉じるという理論です。",s:"ゲートコントロール理論"},
+    {q:"「1Hz」とはどういう状態か？",o:["1秒間に1回振動する","1分間に1回振動する","1秒間に10回振動する","動かない"],c:0,r:"周波数の基本単位です。",s:"周波数とは"}
+];
+
+// 2つのプールを結合
+const questionPool = poolPart1.concat(poolPart2);
+
+// シャッフル関数
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+// クイズ状態管理
+let currentQuizSet = [];
+let currentQuestionIndex = 0;
+let score = 0;
+
+// 定数
+const QUESTIONS_PER_ROUND = 20; // 20問出題
+
+// DOM要素取得
+const startScreen = document.getElementById('start-screen');
+const quizScreen = document.getElementById('quiz-screen');
+const resultScreen = document.getElementById('result-screen');
+const questionBox = document.getElementById('question');
+const optionsBox = document.getElementById('options');
+const feedbackBox = document.getElementById('feedback');
+const nextBtn = document.getElementById('next-btn');
+const progress = document.getElementById('progress');
+const scoreDisplay = document.getElementById('score');
+
+// クイズ開始
+function startQuiz() {
+    currentQuizSet = shuffle([...questionPool]).slice(0, QUESTIONS_PER_ROUND);
+    currentQuestionIndex = 0;
+    score = 0;
+    
+    startScreen.style.display = 'none';
+    resultScreen.style.display = 'none';
+    quizScreen.style.display = 'block';
+    
+    showQuestion();
+}
+
+// リセット（最初に戻る）
+function resetQuiz(force = false) {
+    if (force || confirm("最初の画面に戻りますか？")) {
+        startScreen.style.display = 'block';
+        quizScreen.style.display = 'none';
+        resultScreen.style.display = 'none';
+    }
+}
+
+// 問題表示
+function showQuestion() {
+    const q = currentQuizSet[currentQuestionIndex];
+    questionBox.textContent = `Q${currentQuestionIndex + 1}. ${q.q}`;
+    optionsBox.innerHTML = '';
+    feedbackBox.style.display = 'none';
+    feedbackBox.className = 'feedback';
+    nextBtn.classList.remove('active');
+    
+    progress.textContent = `問 ${currentQuestionIndex + 1} / ${QUESTIONS_PER_ROUND}`;
+    scoreDisplay.textContent = `正解数: ${score}`;
+
+    q.o.forEach((option, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = option;
+        btn.onclick = () => checkAnswer(index, btn, q);
+        optionsBox.appendChild(btn);
+    });
+}
+
+// 正誤判定
+function checkAnswer(selectedIndex, selectedBtn, q) {
+    if (nextBtn.classList.contains('active')) return;
+
+    const isCorrect = (selectedIndex === q.c);
+    const allBtns = document.querySelectorAll('.option-btn');
+
+    if (isCorrect) {
+        selectedBtn.classList.add('correct');
+        feedbackBox.innerHTML = `<strong>正解！</strong><br>${q.r}<span class="source-ref">参照：${q.s}</span>`;
+        feedbackBox.className = 'feedback';
+        score++;
+        scoreDisplay.textContent = `正解数: ${score}`;
+    } else {
+        selectedBtn.classList.add('incorrect');
+        allBtns[q.c].classList.add('correct');
+        feedbackBox.innerHTML = `<strong>不正解...</strong><br>正解は「${q.o[q.c]}」です。<br>${q.r}<span class="source-ref">参照：${q.s}</span>`;
+        feedbackBox.className = 'feedback error';
+    }
+
+    feedbackBox.style.display = 'block';
+    nextBtn.classList.add('active');
+}
+
+// 次の問題へ
+function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < QUESTIONS_PER_ROUND) {
+        showQuestion();
+    } else {
+        showResult();
+    }
+}
+
+// 結果画面
+function showResult() {
+    quizScreen.style.display = 'none';
+    resultScreen.style.display = 'block';
+    
+    const finalScoreEl = document.getElementById('final-score');
+    const commentEl = document.getElementById('result-comment');
+    
+    finalScoreEl.textContent = score;
+    
+    const percentage = (score / QUESTIONS_PER_ROUND) * 100;
+    let comment = "";
+    let color = "";
+
+    if (percentage === 100) {
+        comment = "完璧です！物療マニュアルを完全にマスターしています。";
+        color = "#27ae60"; // Green
+    } else if (percentage >= 80) {
+        comment = "素晴らしい！合格ライン達成です。現場で活かしましょう。";
+        color = "#d35400"; // Orange
+    } else if (percentage >= 60) {
+        comment = "惜しい！あと少しです。間違えた箇所を復習しましょう。";
+        color = "#f39c12"; // Yellow
+    } else {
+        comment = "知識の定着が必要です。マニュアルを読み返して再挑戦しましょう。";
+        color = "#c0392b"; // Red
+    }
+
+    commentEl.textContent = comment;
+    commentEl.style.color = color;
+}
+</script>
+</body>
+</html>
